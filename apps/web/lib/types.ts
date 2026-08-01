@@ -49,6 +49,8 @@ export interface PlayerMatchStats {
   key_passes: number;
   passes_completed: number | null;
   passes_attempted: number | null;
+  duels_won: number | null;
+  duels_total: number | null;
   position_played: string | null;
   was_starter: boolean | null;
 }
