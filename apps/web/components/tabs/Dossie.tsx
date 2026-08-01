@@ -4,7 +4,9 @@ export default function Dossie({ data }: { data: DashboardData }) {
   const { stats, focusAreas, marketValue } = data;
 
   const jogos = stats.length;
-  const titular = stats.filter((s) => s.was_starter).length;
+  // was_starter ainda não é preenchido pelo coletor — usamos 60+ min como proxy honesto
+  // de "jogo relevante" em vez de inventar uma contagem de titularidade que não temos.
+  const jogosComMinutos = stats.filter((s) => (s.minutes_played ?? 0) >= 60).length;
   const gols = stats.reduce((acc, s) => acc + (s.goals ?? 0), 0);
   const assist = stats.reduce((acc, s) => acc + (s.assists ?? 0), 0);
   const notas = stats.map((s) => s.rating).filter((r): r is number => r != null);
@@ -25,7 +27,7 @@ export default function Dossie({ data }: { data: DashboardData }) {
           <div className="kpi">
             <span>Jogos com dados</span>
             <b>{jogos}</b>
-            <em>{titular} como titular</em>
+            <em>{jogosComMinutos} com 60+ min em campo</em>
           </div>
           <div className="kpi">
             <span>Gols</span>
