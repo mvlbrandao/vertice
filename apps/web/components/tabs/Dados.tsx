@@ -69,6 +69,11 @@ export default function Dados({ data, userId }: { data: DashboardData; userId: s
                 ) : (
                   n.title
                 )}
+                {n.title_original && (
+                  <div style={{ fontSize: 11, color: "var(--mute)", textTransform: "none", marginTop: 2 }}>
+                    traduzido do {n.language_original === "it" ? "italiano" : n.language_original === "en" ? "inglês" : "original"} — título original: {n.title_original}
+                  </div>
+                )}
               </div>
             </div>
           </div>

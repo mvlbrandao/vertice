@@ -1,4 +1,5 @@
 import { PRESS_FEEDS, TARGET } from "./config.ts";
+import { translateToPortuguese } from "./translate.ts";
 import type { Db } from "./db.ts";
 
 function extractTag(xml: string, tag: string): string | null {
@@ -35,7 +36,8 @@ function parseRssItems(xml: string): FeedItem[] {
   return items;
 }
 
-/** Coleta notícias recentes sobre o jogador via feeds RSS (Google News) e grava como news_items. */
+/** Coleta notícias recentes sobre o jogador via feeds RSS (Google News), traduz para
+ * português quando a fonte não é PT, e grava como news_items. */
 export async function syncPress(db: Db): Promise<number> {
   const { data: player } = await db
     .from("players")
@@ -56,11 +58,14 @@ export async function syncPress(db: Db): Promise<number> {
       const xml = await res.text();
       const items = parseRssItems(xml);
       for (const item of items) {
+        const translatedTitle = await translateToPortuguese(item.title, feed.lang);
         const { error } = await db.from("news_items").upsert(
           {
             player_id: player?.id ?? null,
             source: feed.name,
-            title: item.title,
+            title: translatedTitle ?? item.title,
+            title_original: translatedTitle ? item.title : null,
+            language_original: translatedTitle ? feed.lang : feed.lang === "pt" ? "pt" : null,
             url: item.link,
             published_at: item.pubDate ? new Date(item.pubDate).toISOString() : null,
             summary: item.description,

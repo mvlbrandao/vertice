@@ -65,6 +65,8 @@ export interface NewsItem {
   id: string;
   source: string;
   title: string;
+  title_original: string | null;
+  language_original: string | null;
   url: string | null;
   published_at: string | null;
   summary: string | null;

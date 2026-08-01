@@ -16,13 +16,15 @@ export const SOFASCORE_HEADERS = {
   Referer: "https://www.sofascore.com/",
 };
 
-export const PRESS_FEEDS: { name: string; url: string }[] = [
+export const PRESS_FEEDS: { name: string; url: string; lang: string }[] = [
   {
     name: "Google News - Luis Henrique Inter",
     url: "https://news.google.com/rss/search?q=%22Luis+Henrique%22+Inter+when:14d&hl=it&gl=IT&ceid=IT:it",
+    lang: "it",
   },
   {
     name: "Google News - Luis Henrique Inter (PT)",
     url: "https://news.google.com/rss/search?q=%22Luis+Henrique%22+Inter+de+Mil%C3%A3o+when:14d&hl=pt-BR&gl=BR&ceid=BR:pt-419",
+    lang: "pt",
   },
 ];
