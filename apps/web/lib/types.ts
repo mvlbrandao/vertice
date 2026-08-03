@@ -143,7 +143,7 @@ export interface UserNote {
   created_at: string;
 }
 
-export type StaffRole = "preparador_fisico" | "analista_tatico" | "empresario" | "medico" | "outro";
+export type StaffRole = "atleta" | "preparador_fisico" | "analista_tatico" | "empresario" | "medico" | "outro";
 
 export interface PlayerStaffMember {
   id: string;

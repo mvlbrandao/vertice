@@ -6,6 +6,7 @@ import type { DashboardData } from "@/components/Dashboard";
 import type { PlayerStaffMember, StaffRole } from "@/lib/types";
 
 const ROLE_LABELS: Record<StaffRole, string> = {
+  atleta: "Atleta (login próprio)",
   preparador_fisico: "Preparador físico",
   analista_tatico: "Analista tático",
   empresario: "Empresário",
