@@ -53,6 +53,12 @@ export interface PlayerMatchStats {
   duels_total: number | null;
   position_played: string | null;
   was_starter: boolean | null;
+  top_speed_kmh: number | null;
+  distance_km: number | null;
+  high_speed_running_km: number | null;
+  sprinting_km: number | null;
+  sprints_count: number | null;
+  heatmap_data: { heatmap: { x: number; y: number }[] } | null;
 }
 
 export interface MarketValueEntry {

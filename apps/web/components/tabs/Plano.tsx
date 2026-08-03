@@ -1,5 +1,6 @@
 import type { DashboardData } from "@/components/Dashboard";
 import type { PlayerMatchStats } from "@/lib/types";
+import { Heatmap } from "@/components/Heatmap";
 
 const CLASS_BY_PRIORITY: Record<string, string> = {
   "Crítica": "p-crit",
@@ -45,7 +46,7 @@ type KpiResult =
   | { kind: "missing"; needs: string }
   | { kind: "process" };
 
-function resolveKpi(label: string, t: Totals): KpiResult {
+function resolveKpi(label: string, t: Totals, data: DashboardData): KpiResult {
   switch (label) {
     case "Gols + assistências / 90": {
       const v = per90(t.goals + t.assists, t.minutes);
@@ -54,13 +55,18 @@ function resolveKpi(label: string, t: Totals): KpiResult {
         kind: "computed",
         value: `${fmt(v)} G+A/90min`,
         coverage: `${fmt(t.minutes)} min em ${t.matches} jogos com dados`,
-        benchmark: "Referência de mercado para pontas: ~0,15–0,29 é média, 0,30–0,54 acima da média, 0,55+ é elite (não é dado deste atleta).",
+        benchmark:
+          "Referência de mercado para pontas: ~0,15–0,29 é média, 0,30–0,54 acima da média, 0,55+ é elite (não é dado deste atleta).",
       };
     }
     case "Finalizações / 90": {
       const v = per90(t.shots, t.minutes);
       if (v == null) return { kind: "missing", needs: "minutos em campo registrados" };
-      return { kind: "computed", value: `${fmt(v)} finalizações/90min`, coverage: `${fmt(t.minutes)} min em ${t.matches} jogos com dados` };
+      return {
+        kind: "computed",
+        value: `${fmt(v)} finalizações/90min`,
+        coverage: `${fmt(t.minutes)} min em ${t.matches} jogos com dados`,
+      };
     }
     case "Duelos defensivos ganhos": {
       if (t.duelsTotal === 0) return { kind: "missing", needs: "estatística de duelos por partida (Sofascore)" };
@@ -80,35 +86,57 @@ function resolveKpi(label: string, t: Totals): KpiResult {
         coverage: `Proxy usando passes-chave do Sofascore — ${fmt(t.minutes)} min em ${t.matches} jogos`,
       };
     }
-    case "Sessões de acompanhamento / mês":
-      return { kind: "process" };
+    case "Dias até o próximo jogo": {
+      const next = data.fixtures
+        .filter((f) => f.match_date)
+        .sort((a, b) => new Date(a.match_date!).getTime() - new Date(b.match_date!).getTime())[0];
+      if (!next?.match_date) return { kind: "missing", needs: "próximo jogo ainda não coletado" };
+      const days = Math.ceil((new Date(next.match_date).getTime() - Date.now()) / (24 * 3600 * 1000));
+      return {
+        kind: "computed",
+        value: days <= 0 ? "é hoje/já passou" : `${days} dia${days === 1 ? "" : "s"}`,
+        coverage: "usado pelo preparador físico para decidir volume x intensidade da semana",
+      };
+    }
+    case "Sprints e velocidade máxima (base física)": {
+      const withPhysical = data.stats.filter((s) => s.top_speed_kmh != null);
+      if (withPhysical.length === 0)
+        return { kind: "missing", needs: "dado físico (GPS) ainda não disponível em nenhum jogo processado" };
+      const last = withPhysical
+        .map((s) => ({ s, m: data.matches.find((m) => m.id === s.match_id) }))
+        .filter((x) => x.m?.match_date)
+        .sort((a, b) => new Date(b.m!.match_date!).getTime() - new Date(a.m!.match_date!).getTime())[0];
+      if (!last) return { kind: "missing", needs: "dado físico sem partida associada" };
+      return {
+        kind: "computed",
+        value: `${fmt(last.s.top_speed_kmh!)} km/h máx · ${last.s.sprints_count ?? "—"} sprints · ${fmt(last.s.distance_km ?? 0)} km`,
+        coverage: `último jogo com dado de GPS (${withPhysical.length} de ${data.stats.length} jogos têm esse dado) — referência para montar a carga de pré-temporada, não tendência recente (hiato entre temporadas)`,
+      };
+    }
     default:
-      return { kind: "missing", needs: "" };
+      return { kind: "missing", needs: "aguardando mais coleta" };
   }
 }
-
-const MISSING_HINTS: Record<string, string> = {
-  "xG por finalização": "precisa de dado de xG por chute (fonte paga: Opta/StatsBomb/API-Football)",
-  "Erros que levam a finalização": "precisa de marcação manual em vídeo (Fase 3)",
-  "Jogos disponíveis na temporada": "cobertura de partidas ainda parcial no banco — cresce a cada coleta",
-  "Dias perdidos por lesão": "tabela de lesões ainda não populada pelo coletor",
-  "Cruzamentos certos": "coletor ainda não grava dados de cruzamento por partida",
-  "Nota nos 15 min finais vs. média do jogo": "precisa de rating por trecho do jogo, não disponível na fonte atual",
-};
 
 export default function Plano({ data }: { data: DashboardData }) {
   const { focusAreas, stats } = data;
   const totals = computeTotals(stats);
   const smallSample = totals.minutes > 0 && totals.minutes < MIN_SAMPLE_MINUTES;
 
+  const heatmapMatch = stats
+    .filter((s) => s.heatmap_data?.heatmap?.length)
+    .map((s) => ({ s, m: data.matches.find((m) => m.id === s.match_id) }))
+    .filter((x) => x.m?.match_date)
+    .sort((a, b) => new Date(b.m!.match_date!).getTime() - new Date(a.m!.match_date!).getTime())[0];
+
   return (
     <>
       <div className="card">
         <h3>Como ler os números abaixo</h3>
         <p className="lede">
-          "/90" significa "por 90 minutos em campo" — é o jeito padrão de comparar jogadores com minutagens
-          diferentes. "Meta" é o alvo de referência da comissão técnica, não um dado medido. Quando não há dado
-          suficiente para calcular algo de verdade, mostramos isso explicitamente em vez de inventar um número.
+          Só ficam aqui indicadores que levam a uma decisão real de treino ou de escalação — cortamos o que era só
+          estatística bonita sem ação associada. "/90" significa "por 90 minutos em campo". "Meta" é o alvo de
+          referência da comissão técnica, não um dado medido.
         </p>
         {smallSample && (
           <p className="foot">
@@ -118,10 +146,23 @@ export default function Plano({ data }: { data: DashboardData }) {
         )}
       </div>
 
+      {heatmapMatch && (
+        <div className="card">
+          <h3>Mapa de posicionamento</h3>
+          <p className="lede">
+            Último jogo com dado de heatmap disponível ({heatmapMatch.m!.match_date ? new Date(heatmapMatch.m!.match_date).toLocaleDateString("pt-BR") : ""}
+            ). Decisão que isso apoia: se a concentração de toques está muito presa à linha de fundo ou já mostra
+            entradas na área — insumo direto para o treino de "chegadas na área" da frente de finalização.
+          </p>
+          <Heatmap points={heatmapMatch.s.heatmap_data!.heatmap} />
+        </div>
+      )}
+
       <div className="card">
         <h3>Plano de desenvolvimento</h3>
         <p className="lede">
-          Cada frente tem o diagnóstico que a justifica, ações concretas e indicadores de acompanhamento.
+          Cada frente tem o diagnóstico que a justifica, ações concretas e só os indicadores que orientam uma
+          decisão de treino.
         </p>
         {focusAreas.map((f) => (
           <div className="frente" key={f.id}>
@@ -137,10 +178,10 @@ export default function Plano({ data }: { data: DashboardData }) {
                 ))}
               </ul>
             )}
-            {f.kpis && (
+            {f.kpis && f.kpis.length > 0 && (
               <div className="kpitab">
                 {f.kpis.map((k, i) => {
-                  const resolved = resolveKpi(k.k, totals);
+                  const resolved = resolveKpi(k.k, totals, data);
                   return (
                     <div key={i} style={{ flexDirection: "column", alignItems: "stretch", gap: 3 }}>
                       <div style={{ display: "flex", justifyContent: "space-between" }}>
@@ -159,14 +200,11 @@ export default function Plano({ data }: { data: DashboardData }) {
                         </div>
                       )}
                       {resolved.kind === "missing" && (
-                        <div style={{ fontSize: 11.5, color: "var(--mute)" }}>
-                          sem dado ainda — {MISSING_HINTS[k.k] ?? (resolved.needs || "aguardando mais coleta")}
-                        </div>
+                        <div style={{ fontSize: 11.5, color: "var(--mute)" }}>sem dado ainda — {resolved.needs}</div>
                       )}
                       {resolved.kind === "process" && (
                         <div style={{ fontSize: 11.5, color: "var(--mute)" }}>
-                          métrica de processo — preenchida manualmente pela comissão técnica, não vem de estatística
-                          de jogo
+                          métrica de processo — preenchida manualmente pela comissão técnica
                         </div>
                       )}
                     </div>
