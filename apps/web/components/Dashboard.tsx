@@ -13,6 +13,7 @@ import type {
   NewsItem,
   Player,
   PlayerMatchStats,
+  PlayerStaffMember,
   UpcomingFixture,
   UserNote,
 } from "@/lib/types";
@@ -36,6 +37,7 @@ export interface DashboardData {
   scenarios: CareerScenario[];
   collectorRuns: CollectorRun[];
   notes: UserNote[];
+  staff: PlayerStaffMember[];
 }
 
 const TABS: [string, string][] = [
@@ -47,7 +49,16 @@ const TABS: [string, string][] = [
   ["dados", "Fontes e dados"],
 ];
 
-export default function Dashboard({ data, userId }: { data: DashboardData; userId: string }) {
+interface DashboardProps {
+  data: DashboardData;
+  userId: string;
+  role: string | null;
+  players: Player[];
+  selectedPlayerId: string | null;
+  onSelectPlayer: (id: string) => void;
+}
+
+export default function Dashboard({ data, userId, role, players, selectedPlayerId, onSelectPlayer }: DashboardProps) {
   const [aba, setAba] = useState("dossie");
   const { player, clubs } = data;
 
@@ -69,6 +80,26 @@ export default function Dashboard({ data, userId }: { data: DashboardData; userI
               {player.jersey_number ? ` · camisa ${player.jersey_number}` : ""}
               {player.nationality ? ` · ${player.nationality}` : ""}
             </div>
+            {players.length > 1 && (
+              <select
+                value={selectedPlayerId ?? ""}
+                onChange={(e) => onSelectPlayer(e.target.value)}
+                style={{
+                  marginTop: 10,
+                  background: "#152437",
+                  color: "#fff",
+                  border: "1px solid #2A4260",
+                  padding: "6px 10px",
+                  fontSize: 13,
+                }}
+              >
+                {players.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.known_as ?? p.full_name}
+                  </option>
+                ))}
+              </select>
+            )}
           </div>
           <div className="idcard">
             <div className="idbox">
@@ -108,7 +139,7 @@ export default function Dashboard({ data, userId }: { data: DashboardData; userI
       </header>
 
       <main className="wrap">
-        {aba === "dossie" && <Dossie data={data} />}
+        {aba === "dossie" && <Dossie data={data} isAdmin={role === "admin"} />}
         {aba === "desempenho" && <Desempenho data={data} />}
         {aba === "plano" && <Plano data={data} />}
         {aba === "jogos" && <Jogos data={data} />}

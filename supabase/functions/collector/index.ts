@@ -2,6 +2,7 @@ import { finishRun, getClient, startRun } from "./db.ts";
 import { syncSofascore } from "./sofascore.ts";
 import { syncTransfermarktMarketValue } from "./transfermarkt.ts";
 import { syncPress } from "./press.ts";
+import { TARGETS } from "./config.ts";
 
 async function runSource(
   db: ReturnType<typeof getClient>,
@@ -26,16 +27,21 @@ Deno.serve(async (req) => {
   }
 
   const db = getClient();
+  const results = [];
 
-  // Sofascore é a fonte primária: as demais dependem do registro do jogador existir.
-  const sofascoreResult = await runSource(db, "sofascore", () => syncSofascore(db));
+  for (const target of TARGETS) {
+    const tag = target.fullName.split(" ")[0];
 
-  const [transfermarktResult, pressResult] = await Promise.all([
-    runSource(db, "transfermarkt_market_value", () => syncTransfermarktMarketValue(db)),
-    runSource(db, "press", () => syncPress(db)),
-  ]);
+    // Sofascore é a fonte primária: as demais dependem do registro do jogador existir.
+    results.push(await runSource(db, `sofascore:${tag}`, () => syncSofascore(db, target)));
 
-  const results = [sofascoreResult, transfermarktResult, pressResult];
+    const [transfermarktResult, pressResult] = await Promise.all([
+      runSource(db, `transfermarkt:${tag}`, () => syncTransfermarktMarketValue(db, target)),
+      runSource(db, `press:${tag}`, () => syncPress(db, target)),
+    ]);
+    results.push(transfermarktResult, pressResult);
+  }
+
   const hasError = results.some((r) => r.status === "error");
 
   return new Response(JSON.stringify({ results }, null, 2), {

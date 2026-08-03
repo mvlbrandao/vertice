@@ -1,4 +1,4 @@
-import { SOFASCORE_HEADERS, TARGET } from "./config.ts";
+import { SOFASCORE_HEADERS, type PlayerTarget } from "./config.ts";
 import type { Db } from "./db.ts";
 
 const BASE = "https://api.sofascore.com/api/v1";
@@ -58,9 +58,15 @@ async function upsertMatch(db: Db, event: any, homeClubId: string | null, awayCl
   return data.id as string;
 }
 
-async function fetchAndUpsertMatchStats(db: Db, playerId: string, matchId: string, eventId: number) {
-  const stats = await sofascoreGet(`/event/${eventId}/player/${TARGET.sofascorePlayerId}/statistics`);
-  const heatmap = await sofascoreGet(`/event/${eventId}/player/${TARGET.sofascorePlayerId}/heatmap`);
+async function fetchAndUpsertMatchStats(
+  db: Db,
+  playerId: string,
+  matchId: string,
+  eventId: number,
+  sofascorePlayerId: number,
+) {
+  const stats = await sofascoreGet(`/event/${eventId}/player/${sofascorePlayerId}/statistics`);
+  const heatmap = await sofascoreGet(`/event/${eventId}/player/${sofascorePlayerId}/heatmap`);
   if (!stats?.statistics) return false;
 
   const s = stats.statistics;
@@ -90,6 +96,11 @@ async function fetchAndUpsertMatchStats(db: Db, playerId: string, matchId: strin
       red_card: (s.redCard ?? 0) > 0,
       position_played: stats.position ?? null,
       was_starter: stats.substitute === false,
+      top_speed_kmh: s.topSpeed ?? null,
+      distance_km: s.kilometersCovered ?? null,
+      high_speed_running_km: s.metersCoveredHighSpeedRunningKm ?? null,
+      sprinting_km: s.metersCoveredSprintingKm ?? null,
+      sprints_count: s.numberOfSprints ?? null,
       heatmap_data: heatmap ?? null,
       source: "sofascore",
       raw_json: stats,
@@ -100,11 +111,11 @@ async function fetchAndUpsertMatchStats(db: Db, playerId: string, matchId: strin
   return true;
 }
 
-/** Sincroniza perfil, clube atual, partidas recentes (com stats) e próximas partidas. */
-export async function syncSofascore(db: Db): Promise<number> {
+/** Sincroniza perfil, clube atual, partidas recentes (com stats) e próximas partidas de um atleta. */
+export async function syncSofascore(db: Db, target: PlayerTarget): Promise<number> {
   let upserted = 0;
 
-  const profile = await sofascoreGet(`/player/${TARGET.sofascorePlayerId}`);
+  const profile = await sofascoreGet(`/player/${target.sofascorePlayerId}`);
   if (!profile?.player) {
     throw new Error("Perfil do jogador não retornado pelo Sofascore");
   }
@@ -118,7 +129,7 @@ export async function syncSofascore(db: Db): Promise<number> {
     .upsert(
       {
         sofascore_id: p.id,
-        full_name: TARGET.fullName,
+        full_name: target.fullName,
         known_as: p.name,
         birth_date: p.dateOfBirth ? p.dateOfBirth.substring(0, 10) : null,
         height_cm: p.height ?? null,
@@ -143,7 +154,7 @@ export async function syncSofascore(db: Db): Promise<number> {
 
   // Últimas partidas (várias páginas, para até tiver histórico o suficiente)
   for (let page = 0; page < 3; page++) {
-    const last = await sofascoreGet(`/player/${TARGET.sofascorePlayerId}/events/last/${page}`);
+    const last = await sofascoreGet(`/player/${target.sofascorePlayerId}/events/last/${page}`);
     if (!last?.events?.length) break;
     for (const event of last.events) {
       try {
@@ -151,7 +162,7 @@ export async function syncSofascore(db: Db): Promise<number> {
         const awayClubId = await upsertClub(db, event.awayTeam);
         const matchId = await upsertMatch(db, event, homeClubId, awayClubId);
         upserted++;
-        const ok = await fetchAndUpsertMatchStats(db, playerId, matchId, event.id);
+        const ok = await fetchAndUpsertMatchStats(db, playerId, matchId, event.id, target.sofascorePlayerId);
         if (ok) upserted++;
       } catch (e) {
         console.error(`Falha ao processar evento ${event.id}:`, (e as Error).message);
@@ -161,7 +172,7 @@ export async function syncSofascore(db: Db): Promise<number> {
   }
 
   // Próximas partidas
-  const next = await sofascoreGet(`/player/${TARGET.sofascorePlayerId}/events/next/0`);
+  const next = await sofascoreGet(`/player/${target.sofascorePlayerId}/events/next/0`);
   if (next?.events?.length) {
     for (const event of next.events) {
       try {

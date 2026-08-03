@@ -1,4 +1,4 @@
-import { TARGET } from "./config.ts";
+import type { PlayerTarget } from "./config.ts";
 import type { Db } from "./db.ts";
 
 /**
@@ -6,8 +6,8 @@ import type { Db } from "./db.ts";
  * de valor de mercado no site) retorna uma série histórica em JSON e costuma
  * ser mais estável que fazer parsing de HTML.
  */
-export async function syncTransfermarktMarketValue(db: Db): Promise<number> {
-  const url = `https://www.transfermarkt.com/ceapi/marketValueDevelopment/graph/${TARGET.transfermarktId}`;
+export async function syncTransfermarktMarketValue(db: Db, target: PlayerTarget): Promise<number> {
+  const url = `https://www.transfermarkt.com/ceapi/marketValueDevelopment/graph/${target.transfermarktId}`;
   const res = await fetch(url, {
     headers: {
       "User-Agent":
@@ -25,13 +25,12 @@ export async function syncTransfermarktMarketValue(db: Db): Promise<number> {
   const { data: player, error: playerErr } = await db
     .from("players")
     .select("id")
-    .eq("sofascore_id", TARGET.sofascorePlayerId)
+    .eq("sofascore_id", target.sofascorePlayerId)
     .single();
   if (playerErr || !player) throw new Error("Jogador ainda não existe no banco (rode o sync do Sofascore primeiro)");
 
   let upserted = 0;
   for (const point of points) {
-    // point.datum_mw = "Jan 1, 2024", point.y = valor em EUR
     const date = point.datum_mw ? new Date(point.datum_mw) : null;
     if (!date || isNaN(date.getTime()) || typeof point.y !== "number") continue;
     const { error } = await db.from("market_value_history").upsert(

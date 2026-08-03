@@ -1,7 +1,27 @@
-import type { DashboardData } from "@/components/Dashboard";
+"use client";
 
-export default function Dossie({ data }: { data: DashboardData }) {
+import { useState } from "react";
+import { supabase } from "@/lib/supabaseClient";
+import type { DashboardData } from "@/components/Dashboard";
+import type { PlayerStaffMember, StaffRole } from "@/lib/types";
+
+const ROLE_LABELS: Record<StaffRole, string> = {
+  preparador_fisico: "Preparador físico",
+  analista_tatico: "Analista tático",
+  empresario: "Empresário",
+  medico: "Médico",
+  outro: "Outro",
+};
+
+export default function Dossie({ data, isAdmin }: { data: DashboardData; isAdmin: boolean }) {
   const { stats, focusAreas, marketValue } = data;
+  const [staff, setStaff] = useState<PlayerStaffMember[]>(data.staff);
+  const [showForm, setShowForm] = useState(false);
+  const [role, setRole] = useState<StaffRole>("preparador_fisico");
+  const [fullName, setFullName] = useState("");
+  const [email, setEmail] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const jogos = stats.length;
   // was_starter ainda não é preenchido pelo coletor — usamos 60+ min como proxy honesto
@@ -14,6 +34,33 @@ export default function Dossie({ data }: { data: DashboardData }) {
   const valorAtual = marketValue.length ? marketValue[marketValue.length - 1] : null;
 
   const criticas = focusAreas.filter((f) => f.priority === "Crítica" || f.priority === "Alta");
+
+  async function addStaff() {
+    if (!fullName.trim()) return;
+    setSaving(true);
+    setError(null);
+    const { data: inserted, error } = await supabase
+      .from("player_staff")
+      .insert({
+        player_id: data.player.id,
+        role,
+        full_name: fullName.trim(),
+        email: email.trim() || null,
+      })
+      .select("*")
+      .single();
+    setSaving(false);
+    if (error) {
+      setError(error.message);
+      return;
+    }
+    if (inserted) {
+      setStaff([...staff, inserted]);
+      setFullName("");
+      setEmail("");
+      setShowForm(false);
+    }
+  }
 
   return (
     <>
@@ -48,6 +95,78 @@ export default function Dossie({ data }: { data: DashboardData }) {
             <em>{valorAtual?.source ?? ""}</em>
           </div>
         </div>
+      </div>
+
+      <div className="card">
+        <h3>Equipe técnica</h3>
+        <p className="lede">
+          Quem acompanha este atleta. Se o e-mail cadastrado aqui criar login, o acesso a este atleta é liberado
+          automaticamente.
+        </p>
+        {staff.map((s) => (
+          <div className="match" key={s.id} style={{ gridTemplateColumns: "160px 1fr" }}>
+            <div className="mdate">{ROLE_LABELS[s.role] ?? s.role}</div>
+            <div>
+              <div className="mtitle" style={{ fontSize: 14, textTransform: "none" }}>
+                {s.full_name}
+              </div>
+              <div className="mobs">
+                {s.email ?? "sem e-mail cadastrado"}
+                {s.linked_user_id ? " · login ativo" : " · ainda sem login"}
+              </div>
+            </div>
+          </div>
+        ))}
+        {staff.length === 0 && <p className="foot">Nenhum membro de equipe cadastrado ainda.</p>}
+
+        {isAdmin && (
+          <div style={{ marginTop: 16 }}>
+            {!showForm ? (
+              <button className="btn" onClick={() => setShowForm(true)}>
+                Adicionar membro da equipe
+              </button>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: 8, maxWidth: 360 }}>
+                {error && <div className="error">{error}</div>}
+                <select
+                  value={role}
+                  onChange={(e) => setRole(e.target.value as StaffRole)}
+                  style={{ padding: 8, border: "1px solid #C9D4DD" }}
+                >
+                  {Object.entries(ROLE_LABELS).map(([value, label]) => (
+                    <option key={value} value={value}>
+                      {label}
+                    </option>
+                  ))}
+                </select>
+                <input
+                  placeholder="Nome completo"
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
+                  style={{ padding: 8, border: "1px solid #C9D4DD" }}
+                />
+                <input
+                  placeholder="E-mail (opcional — habilita login futuro)"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  style={{ padding: 8, border: "1px solid #C9D4DD" }}
+                />
+                <div style={{ display: "flex", gap: 8 }}>
+                  <button className="btn" onClick={addStaff} disabled={saving || !fullName.trim()}>
+                    {saving ? "Salvando..." : "Salvar"}
+                  </button>
+                  <button
+                    className="btn"
+                    style={{ background: "#5F7387" }}
+                    onClick={() => setShowForm(false)}
+                  >
+                    Cancelar
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       <div className="card">

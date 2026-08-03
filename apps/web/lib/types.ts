@@ -142,3 +142,17 @@ export interface UserNote {
   content: string;
   created_at: string;
 }
+
+export type StaffRole = "preparador_fisico" | "analista_tatico" | "empresario" | "medico" | "outro";
+
+export interface PlayerStaffMember {
+  id: string;
+  player_id: string;
+  role: StaffRole;
+  full_name: string;
+  email: string | null;
+  phone: string | null;
+  notes: string | null;
+  linked_user_id: string | null;
+  created_at: string;
+}
