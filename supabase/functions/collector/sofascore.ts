@@ -171,8 +171,12 @@ export async function syncSofascore(db: Db, target: PlayerTarget): Promise<numbe
     if (!last.hasNextPage) break;
   }
 
-  // Próximas partidas
-  const next = await sofascoreGet(`/player/${target.sofascorePlayerId}/events/next/0`);
+  // Próximas partidas — o endpoint por jogador (/player/{id}/events/next/N) foi
+  // descontinuado pelo Sofascore (retorna 404 até pra titulares de time grande, ex.
+  // Lautaro Martínez). Fallback: calendário do clube atual, filtrando o adversário.
+  // Só perde precisão pra quem está emprestado (mostra o calendário do clube
+  // contratante, não do time do empréstimo).
+  const next = p.team?.id ? await sofascoreGet(`/team/${p.team.id}/events/next/0`) : null;
   if (next?.events?.length) {
     for (const event of next.events) {
       try {
