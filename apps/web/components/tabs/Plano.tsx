@@ -1,6 +1,42 @@
 import type { DashboardData } from "@/components/Dashboard";
-import type { PlayerMatchStats, PlayerSeasonStats } from "@/lib/types";
+import type { PlayerMatchStats, PlayerSeasonStats, PositionBenchmarkEntry } from "@/lib/types";
 import { Heatmap } from "@/components/Heatmap";
+
+function BenchmarkTable({ entries, showLeague }: { entries: PositionBenchmarkEntry[]; showLeague?: boolean }) {
+  if (entries.length === 0) return <p className="foot">Sem dado ainda pra esse ranking.</p>;
+  return (
+    <div className="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Jogador</th>
+            {showLeague && <th>Liga</th>}
+            <th>Nota</th>
+            <th>G</th>
+            <th>A</th>
+          </tr>
+        </thead>
+        <tbody>
+          {entries.map((e, i) => (
+            <tr key={i}>
+              <td>
+                <div>{e.name}</div>
+                <div className="foot" style={{ marginTop: 1 }}>
+                  {e.team}
+                  {e.note ? ` — ${e.note}` : ""}
+                </div>
+              </td>
+              {showLeague && <td>{e.league ?? "—"}</td>}
+              <td className="mono">{e.rating ?? "—"}</td>
+              <td className="mono">{e.goals}</td>
+              <td className="mono">{e.assists}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
 
 const CLASS_BY_PRIORITY: Record<string, string> = {
   "Crítica": "p-crit",
@@ -267,6 +303,69 @@ export default function Plano({ data }: { data: DashboardData }) {
         ))}
         {focusAreas.length === 0 && <p className="foot">Nenhuma frente cadastrada ainda.</p>}
       </div>
+
+      {data.positionBenchmark ? (
+        <>
+          <div className="card">
+            <h3>Onde você está</h3>
+            <p className="lede">
+              Nota própria comparada com jogadores da posição "{data.positionBenchmark.position_label}" — categoria
+              ampla do Sofascore, não a sub-posição exata (o filtro deles não segmenta lateral/zagueiro/ala
+              separadamente, por exemplo).
+            </p>
+            <div className="kpis">
+              <div className="kpi">
+                <span>Sua nota</span>
+                <b>{data.positionBenchmark.own_rating ?? "—"}</b>
+                <em>{data.positionBenchmark.own_rating_source ?? ""}</em>
+              </div>
+              <div className="kpi">
+                <span>{data.positionBenchmark.own_league_name ?? "Sua liga"}</span>
+                <b>
+                  {data.positionBenchmark.own_league_rank ? `#${data.positionBenchmark.own_league_rank}` : "fora do top 100"}
+                </b>
+                <em>{data.positionBenchmark.own_league_pool_note ?? ""}</em>
+              </div>
+              <div className="kpi">
+                <span>5 principais ligas</span>
+                <b>
+                  {data.positionBenchmark.top_leagues_rank ? `#${data.positionBenchmark.top_leagues_rank}` : "fora do top 100"}
+                </b>
+                <em>{data.positionBenchmark.top_leagues_pool_note ?? ""}</em>
+              </div>
+            </div>
+            {data.positionBenchmark.data_notes && (
+              <p className="foot" style={{ marginTop: 10 }}>
+                {data.positionBenchmark.data_notes}
+              </p>
+            )}
+          </div>
+
+          <div className="card">
+            <h3>Top 5 da posição — {data.positionBenchmark.own_league_name ?? "sua liga"}</h3>
+            <p className="lede">
+              {data.positionBenchmark.own_league_season ? `Temporada ${data.positionBenchmark.own_league_season}. ` : ""}
+              Referência de nível — os 5 melhores avaliados na categoria "{data.positionBenchmark.position_label}"
+              dessa liga.
+            </p>
+            <BenchmarkTable entries={data.positionBenchmark.same_league_top5} />
+          </div>
+
+          <div className="card">
+            <h3>Top 5 da posição — principais ligas</h3>
+            <p className="lede">
+              Melhores avaliados na categoria "{data.positionBenchmark.position_label}" entre Premier League, LaLiga,
+              Serie A, Bundesliga e Ligue 1 combinadas.
+            </p>
+            <BenchmarkTable entries={data.positionBenchmark.top_leagues_top5} showLeague />
+          </div>
+        </>
+      ) : (
+        <div className="card">
+          <h3>Onde você está</h3>
+          <p className="foot">Benchmark de posição ainda não coletado.</p>
+        </div>
+      )}
     </>
   );
 }

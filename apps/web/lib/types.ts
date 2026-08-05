@@ -89,6 +89,32 @@ export interface PlayerSeasonStats {
   source: string;
 }
 
+export interface PositionBenchmarkEntry {
+  name: string;
+  team: string;
+  league?: string;
+  rating: number | null;
+  goals: number;
+  assists: number;
+  note?: string;
+}
+
+export interface PlayerPositionBenchmark {
+  position_code: string;
+  position_label: string;
+  own_rating: number | null;
+  own_rating_source: string | null;
+  own_league_name: string | null;
+  own_league_season: string | null;
+  own_league_rank: number | null;
+  own_league_pool_note: string | null;
+  same_league_top5: PositionBenchmarkEntry[];
+  top_leagues_rank: number | null;
+  top_leagues_pool_note: string | null;
+  top_leagues_top5: PositionBenchmarkEntry[];
+  data_notes: string | null;
+}
+
 export interface MarketValueEntry {
   as_of_date: string;
   value_eur: number;

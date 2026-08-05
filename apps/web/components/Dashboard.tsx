@@ -13,6 +13,7 @@ import type {
   NewsItem,
   Player,
   PlayerMatchStats,
+  PlayerPositionBenchmark,
   PlayerSeasonStats,
   PlayerStaffMember,
   UpcomingFixture,
@@ -40,6 +41,7 @@ export interface DashboardData {
   collectorRuns: CollectorRun[];
   notes: UserNote[];
   staff: PlayerStaffMember[];
+  positionBenchmark: PlayerPositionBenchmark | null;
 }
 
 const TABS: [string, string][] = [

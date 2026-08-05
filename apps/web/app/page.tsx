@@ -76,6 +76,7 @@ export default function Page() {
           runsRes,
           notesRes,
           staffRes,
+          positionBenchmarkRes,
         ] = await Promise.all([
           supabase.from("clubs").select("*"),
           supabase.from("matches").select("*").order("match_date", { ascending: true }),
@@ -132,6 +133,7 @@ export default function Page() {
             .select("*")
             .eq("player_id", player!.id)
             .order("created_at", { ascending: true }),
+          supabase.from("player_position_benchmarks").select("*").eq("player_id", player!.id).maybeSingle(),
         ]);
 
         const firstError = [
@@ -148,6 +150,7 @@ export default function Page() {
           runsRes,
           notesRes,
           staffRes,
+          positionBenchmarkRes,
         ].find((r) => r.error);
         if (firstError?.error) throw firstError.error;
 
@@ -167,6 +170,7 @@ export default function Page() {
           collectorRuns: runsRes.data ?? [],
           notes: notesRes.data ?? [],
           staff: staffRes.data ?? [],
+          positionBenchmark: positionBenchmarkRes.data ?? null,
         });
       } catch (err) {
         if (!cancelled) setLoadError((err as Error).message);
