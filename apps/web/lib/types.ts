@@ -106,6 +106,31 @@ export interface NewsItem {
   summary: string | null;
 }
 
+export interface OpponentThreat {
+  name: string;
+  position: string;
+  note: string;
+  rating: number | null;
+  goals: number;
+  assists: number;
+  minutes: number;
+  games: number;
+  competition: string;
+  risk: "alto" | "medio" | "baixo";
+}
+
+export interface PlayerWatchPoint {
+  title: string;
+  note: string;
+  severity: "atencao" | "ok" | "info";
+}
+
+export interface FixtureScouting {
+  context: string;
+  opponent_threats: OpponentThreat[];
+  player_watch_points: PlayerWatchPoint[];
+}
+
 export interface UpcomingFixture {
   id: string;
   match_id: string;
@@ -114,6 +139,7 @@ export interface UpcomingFixture {
   match_date: string | null;
   is_probable_starter: boolean | null;
   notes: string | null;
+  scouting: FixtureScouting | null;
 }
 
 export interface FocusAreaKpi {

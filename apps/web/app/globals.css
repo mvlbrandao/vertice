@@ -266,6 +266,9 @@ tr[data-hi="1"] td {
 .p-media {
   color: var(--blue);
 }
+.p-ok {
+  color: var(--pitch);
+}
 
 .frente {
   border-left: 3px solid var(--blue);
