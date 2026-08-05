@@ -13,6 +13,7 @@ import type {
   NewsItem,
   Player,
   PlayerMatchStats,
+  PlayerSeasonStats,
   PlayerStaffMember,
   UpcomingFixture,
   UserNote,
@@ -29,6 +30,7 @@ export interface DashboardData {
   clubs: Club[];
   matches: Match[];
   stats: PlayerMatchStats[];
+  seasonStats: PlayerSeasonStats[];
   marketValue: MarketValueEntry[];
   news: NewsItem[];
   fixtures: UpcomingFixture[];

@@ -61,6 +61,34 @@ export interface PlayerMatchStats {
   heatmap_data: { heatmap: { x: number; y: number }[] } | null;
 }
 
+export interface PlayerSeasonStats {
+  id: string;
+  player_id: string;
+  club_id: string | null;
+  competition: string;
+  season: string;
+  is_loan: boolean;
+  appearances: number | null;
+  matches_started: number | null;
+  minutes_played: number | null;
+  goals: number | null;
+  assists: number | null;
+  avg_rating: number | null;
+  yellow_cards: number | null;
+  red_cards: number | null;
+  pass_accuracy_pct: number | null;
+  duels_won: number | null;
+  duels_total: number | null;
+  key_passes: number | null;
+  crosses_completed: number | null;
+  crosses_total: number | null;
+  interceptions: number | null;
+  clearances: number | null;
+  distance_km: number | null;
+  top_speed_kmh: number | null;
+  source: string;
+}
+
 export interface MarketValueEntry {
   as_of_date: string;
   value_eur: number;

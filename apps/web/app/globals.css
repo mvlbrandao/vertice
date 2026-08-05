@@ -205,10 +205,18 @@ main {
   margin-top: 3px;
 }
 
+.table-wrap {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  margin: 0 -2px;
+}
 table {
   width: 100%;
   border-collapse: collapse;
   font-size: 13.5px;
+}
+.table-wrap table {
+  min-width: 540px;
 }
 th {
   font-family: "Barlow Condensed", sans-serif;
@@ -220,6 +228,7 @@ th {
   padding: 8px 6px;
   border-bottom: 1px solid var(--line);
   font-weight: 600;
+  white-space: nowrap;
 }
 th:first-child,
 td:first-child {
@@ -229,6 +238,7 @@ td {
   padding: 9px 6px;
   border-bottom: 1px solid #edf1f4;
   text-align: right;
+  white-space: nowrap;
 }
 tbody tr:last-child td {
   border-bottom: 0;

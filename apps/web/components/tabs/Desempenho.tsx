@@ -15,8 +15,9 @@ import {
 import type { DashboardData } from "@/components/Dashboard";
 
 export default function Desempenho({ data }: { data: DashboardData }) {
-  const { stats, matches } = data;
+  const { stats, matches, seasonStats, clubs } = data;
   const matchById = Object.fromEntries(matches.map((m) => [m.id, m]));
+  const clubById = Object.fromEntries(clubs.map((c) => [c.id, c]));
 
   const timeline = stats
     .map((s) => {
@@ -57,6 +58,55 @@ export default function Desempenho({ data }: { data: DashboardData }) {
 
   return (
     <>
+      <div className="card">
+        <h3>Temporadas (carreira)</h3>
+        <p className="lede">
+          Agregados oficiais Sofascore por competição/temporada — cobre clubes e torneios anteriores ao início da
+          coleta jogo-a-jogo, que só acompanha a temporada atual.
+        </p>
+        {seasonStats.length > 0 ? (
+          <div className="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Temporada</th>
+                  <th>Clube</th>
+                  <th>Competição</th>
+                  <th>J</th>
+                  <th>Tit.</th>
+                  <th>Min</th>
+                  <th>Nota</th>
+                  <th>G</th>
+                  <th>A</th>
+                  <th>Passe %</th>
+                </tr>
+              </thead>
+              <tbody>
+                {seasonStats.map((s) => (
+                  <tr key={s.id}>
+                    <td className="mono">
+                      {s.season}
+                      {s.is_loan ? " (empréstimo)" : ""}
+                    </td>
+                    <td>{s.club_id ? clubById[s.club_id]?.name ?? "—" : "—"}</td>
+                    <td>{s.competition}</td>
+                    <td className="mono">{s.appearances ?? "—"}</td>
+                    <td className="mono">{s.matches_started ?? "—"}</td>
+                    <td className="mono">{s.minutes_played ?? "—"}</td>
+                    <td className="mono">{s.avg_rating ?? "—"}</td>
+                    <td className="mono">{s.goals ?? "—"}</td>
+                    <td className="mono">{s.assists ?? "—"}</td>
+                    <td className="mono">{s.pass_accuracy_pct != null ? `${s.pass_accuracy_pct}%` : "—"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <p className="foot">Sem agregados de temporada validados ainda.</p>
+        )}
+      </div>
+
       <div className="card">
         <h3>Nota por partida</h3>
         <p className="lede">
@@ -111,40 +161,42 @@ export default function Desempenho({ data }: { data: DashboardData }) {
 
       <div className="card">
         <h3>Partidas processadas</h3>
-        <table>
-          <thead>
-            <tr>
-              <th>Data</th>
-              <th>Competição</th>
-              <th>Min</th>
-              <th>Nota</th>
-              <th>G</th>
-              <th>A</th>
-            </tr>
-          </thead>
-          <tbody>
-            {stats
-              .slice()
-              .sort((a, b) => {
-                const da = matchById[a.match_id]?.match_date ?? "";
-                const db = matchById[b.match_id]?.match_date ?? "";
-                return db.localeCompare(da);
-              })
-              .map((s) => {
-                const m = matchById[s.match_id];
-                return (
-                  <tr key={s.id}>
-                    <td>{m?.match_date ? new Date(m.match_date).toLocaleDateString("pt-BR") : "—"}</td>
-                    <td>{m?.competition ?? "—"}</td>
-                    <td className="mono">{s.minutes_played ?? "—"}</td>
-                    <td className="mono">{s.rating ?? "—"}</td>
-                    <td className="mono">{s.goals}</td>
-                    <td className="mono">{s.assists}</td>
-                  </tr>
-                );
-              })}
-          </tbody>
-        </table>
+        <div className="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Data</th>
+                <th>Competição</th>
+                <th>Min</th>
+                <th>Nota</th>
+                <th>G</th>
+                <th>A</th>
+              </tr>
+            </thead>
+            <tbody>
+              {stats
+                .slice()
+                .sort((a, b) => {
+                  const da = matchById[a.match_id]?.match_date ?? "";
+                  const db = matchById[b.match_id]?.match_date ?? "";
+                  return db.localeCompare(da);
+                })
+                .map((s) => {
+                  const m = matchById[s.match_id];
+                  return (
+                    <tr key={s.id}>
+                      <td>{m?.match_date ? new Date(m.match_date).toLocaleDateString("pt-BR") : "—"}</td>
+                      <td>{m?.competition ?? "—"}</td>
+                      <td className="mono">{s.minutes_played ?? "—"}</td>
+                      <td className="mono">{s.rating ?? "—"}</td>
+                      <td className="mono">{s.goals}</td>
+                      <td className="mono">{s.assists}</td>
+                    </tr>
+                  );
+                })}
+            </tbody>
+          </table>
+        </div>
       </div>
     </>
   );

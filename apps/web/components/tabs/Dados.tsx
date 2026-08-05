@@ -83,26 +83,28 @@ export default function Dados({ data, userId }: { data: DashboardData; userId: s
 
       <div className="card">
         <h3>Status do coletor</h3>
-        <table>
-          <thead>
-            <tr>
-              <th>Fonte</th>
-              <th>Início</th>
-              <th>Status</th>
-              <th>Registros</th>
-            </tr>
-          </thead>
-          <tbody>
-            {collectorRuns.map((r) => (
-              <tr key={r.id}>
-                <td>{r.source}</td>
-                <td>{new Date(r.started_at).toLocaleString("pt-BR")}</td>
-                <td className="mono">{r.status}</td>
-                <td className="mono">{r.records_upserted}</td>
+        <div className="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Fonte</th>
+                <th>Início</th>
+                <th>Status</th>
+                <th>Registros</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {collectorRuns.map((r) => (
+                <tr key={r.id}>
+                  <td>{r.source}</td>
+                  <td>{new Date(r.started_at).toLocaleString("pt-BR")}</td>
+                  <td className="mono">{r.status}</td>
+                  <td className="mono">{r.records_upserted}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
         <p className="foot" style={{ marginTop: 12 }}>
           O Sofascore bloqueia requisições vindas da infraestrutura do Supabase (HTTP 403) — Transfermarkt e
           imprensa rodam automaticamente todo dia; dados ricos do Sofascore (heatmap, stats detalhadas) precisam de

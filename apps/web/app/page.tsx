@@ -66,6 +66,7 @@ export default function Page() {
           clubsRes,
           matchesRes,
           statsRes,
+          seasonStatsRes,
           marketRes,
           newsRes,
           fixturesRes,
@@ -79,6 +80,11 @@ export default function Page() {
           supabase.from("clubs").select("*"),
           supabase.from("matches").select("*").order("match_date", { ascending: true }),
           supabase.from("player_match_stats").select("*").eq("player_id", player!.id),
+          supabase
+            .from("player_season_stats")
+            .select("*")
+            .eq("player_id", player!.id)
+            .order("season", { ascending: false }),
           supabase
             .from("market_value_history")
             .select("as_of_date, value_eur, source")
@@ -132,6 +138,7 @@ export default function Page() {
           clubsRes,
           matchesRes,
           statsRes,
+          seasonStatsRes,
           marketRes,
           newsRes,
           fixturesRes,
@@ -150,6 +157,7 @@ export default function Page() {
           clubs: clubsRes.data ?? [],
           matches: matchesRes.data ?? [],
           stats: statsRes.data ?? [],
+          seasonStats: seasonStatsRes.data ?? [],
           marketValue: marketRes.data ?? [],
           news: newsRes.data ?? [],
           fixtures: fixturesRes.data ?? [],
