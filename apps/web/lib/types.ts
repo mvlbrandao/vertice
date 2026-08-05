@@ -143,6 +143,10 @@ export interface OpponentThreat {
   games: number;
   competition: string;
   risk: "alto" | "medio" | "baixo";
+  sofascore_id?: number;
+  extra_stats?: { label: string; value: string }[];
+  heatmap?: { x: number; y: number }[] | null;
+  heatmap_note?: string;
 }
 
 export interface PlayerWatchPoint {

@@ -186,11 +186,19 @@ export default function Plano({ data }: { data: DashboardData }) {
   const totals = computeTotals(stats);
   const smallSample = totals.minutes > 0 && totals.minutes < MIN_SAMPLE_MINUTES;
 
-  const heatmapMatch = stats
-    .filter((s) => s.heatmap_data?.heatmap?.length)
+  // Amostra mínima pro heatmap não ficar enganoso — poucos pontos (ex: um jogador que
+  // entrou faltando 8min) some direto num mapa quase vazio que não representa nada real.
+  const MIN_HEATMAP_POINTS = 15;
+  const heatmapCandidates = stats
+    .filter((s) => (s.heatmap_data?.heatmap?.length ?? 0) > 0)
     .map((s) => ({ s, m: data.matches.find((m) => m.id === s.match_id) }))
-    .filter((x) => x.m?.match_date)
+    .filter((x) => x.m?.match_date);
+  const heatmapFromRecent = heatmapCandidates
+    .filter((x) => x.s.heatmap_data!.heatmap.length >= MIN_HEATMAP_POINTS)
     .sort((a, b) => new Date(b.m!.match_date!).getTime() - new Date(a.m!.match_date!).getTime())[0];
+  const heatmapMatch =
+    heatmapFromRecent ?? heatmapCandidates.sort((a, b) => b.s.heatmap_data!.heatmap.length - a.s.heatmap_data!.heatmap.length)[0];
+  const heatmapIsFallback = !!heatmapMatch && !heatmapFromRecent;
 
   return (
     <>
@@ -213,8 +221,15 @@ export default function Plano({ data }: { data: DashboardData }) {
         <div className="card">
           <h3>Mapa de posicionamento</h3>
           <p className="lede">
-            Último jogo com dado de heatmap disponível ({heatmapMatch.m!.match_date ? new Date(heatmapMatch.m!.match_date).toLocaleDateString("pt-BR") : ""}
-            ). Decisão que isso apoia: se a concentração de toques está muito presa à linha de fundo ou já mostra
+            {heatmapMatch.m!.match_date ? new Date(heatmapMatch.m!.match_date).toLocaleDateString("pt-BR") : ""} ·{" "}
+            {heatmapMatch.s.minutes_played ?? "—"}min em campo · {heatmapMatch.s.heatmap_data!.heatmap.length} toques
+            registrados
+            {heatmapIsFallback
+              ? " — não é o jogo mais recente: os mais recentes tinham poucos minutos/toques (amostra insuficiente pra representar posicionamento real), então usamos o jogo com mais dado disponível."
+              : heatmapMatch.s.heatmap_data!.heatmap.length < MIN_HEATMAP_POINTS
+                ? " — amostra pequena, é o único jogo com heatmap disponível, tratar como indicativo, não conclusivo."
+                : "."}{" "}
+            Decisão que isso apoia: se a concentração de toques está muito presa à linha de fundo ou já mostra
             entradas na área — insumo direto para o treino de "chegadas na área" da frente de finalização.
           </p>
           <Heatmap points={heatmapMatch.s.heatmap_data!.heatmap} />

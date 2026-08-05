@@ -1,5 +1,9 @@
+"use client";
+
+import { useState } from "react";
 import type { DashboardData } from "@/components/Dashboard";
 import type { OpponentThreat, PlayerWatchPoint } from "@/lib/types";
+import { Heatmap } from "@/components/Heatmap";
 
 const RISK_CLASS: Record<OpponentThreat["risk"], string> = {
   alto: "p-crit",
@@ -30,6 +34,94 @@ const subhead: React.CSSProperties = {
   margin: "0 0 8px",
   color: "var(--slate)",
 };
+
+function OpponentRow({ t }: { t: OpponentThreat }) {
+  const [open, setOpen] = useState(false);
+  const hasDetail = Boolean((t.extra_stats && t.extra_stats.length > 0) || (t.heatmap && t.heatmap.length > 0));
+
+  return (
+    <>
+      <tr onClick={() => hasDetail && setOpen((o) => !o)} style={{ cursor: hasDetail ? "pointer" : "default" }}>
+        <td>
+          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            {hasDetail && (
+              <span
+                style={{
+                  fontSize: 10,
+                  color: "var(--blue)",
+                  display: "inline-block",
+                  transform: open ? "rotate(90deg)" : "none",
+                  transition: "transform .15s",
+                }}
+              >
+                ▶
+              </span>
+            )}
+            <span
+              style={
+                hasDetail
+                  ? { textDecoration: "underline", textDecorationStyle: "dotted", textUnderlineOffset: 3 }
+                  : undefined
+              }
+            >
+              {t.name}
+            </span>
+          </div>
+          <div className="foot" style={{ marginTop: 1, marginLeft: hasDetail ? 16 : 0 }}>
+            {t.position}
+          </div>
+        </td>
+        <td>
+          <span className={`pill ${RISK_CLASS[t.risk]}`}>{RISK_LABEL[t.risk]}</span>
+        </td>
+        <td className="mono">{t.rating ?? "—"}</td>
+        <td className="mono">{t.goals}</td>
+        <td className="mono">{t.assists}</td>
+        <td className="mono">{t.minutes}</td>
+      </tr>
+      {open && hasDetail && (
+        <tr>
+          <td colSpan={6} style={{ background: "#f5f8fa", padding: "14px 12px" }}>
+            <div style={{ display: "flex", gap: 24, flexWrap: "wrap", alignItems: "flex-start" }}>
+              {t.extra_stats && t.extra_stats.length > 0 && (
+                <div style={{ minWidth: 180 }}>
+                  {t.extra_stats.map((s, i) => (
+                    <div
+                      key={i}
+                      style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        gap: 10,
+                        fontSize: 12,
+                        padding: "3px 0",
+                        color: "var(--mute)",
+                      }}
+                    >
+                      <span>{s.label}</span>
+                      <span className="mono" style={{ color: "var(--ink)" }}>
+                        {s.value}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+              {t.heatmap && t.heatmap.length > 0 && (
+                <div style={{ maxWidth: 280, flex: "1 1 240px" }}>
+                  <Heatmap points={t.heatmap} />
+                  {t.heatmap_note && (
+                    <p className="foot" style={{ marginTop: 4 }}>
+                      {t.heatmap_note}
+                    </p>
+                  )}
+                </div>
+              )}
+            </div>
+          </td>
+        </tr>
+      )}
+    </>
+  );
+}
 
 export default function Jogos({ data }: { data: DashboardData }) {
   const { fixtures, clubs, matches } = data;
@@ -90,21 +182,7 @@ export default function Jogos({ data }: { data: DashboardData }) {
                       </thead>
                       <tbody>
                         {scouting.opponent_threats.map((t, i) => (
-                          <tr key={i}>
-                            <td>
-                              <div>{t.name}</div>
-                              <div className="foot" style={{ marginTop: 1 }}>
-                                {t.position}
-                              </div>
-                            </td>
-                            <td>
-                              <span className={`pill ${RISK_CLASS[t.risk]}`}>{RISK_LABEL[t.risk]}</span>
-                            </td>
-                            <td className="mono">{t.rating ?? "—"}</td>
-                            <td className="mono">{t.goals}</td>
-                            <td className="mono">{t.assists}</td>
-                            <td className="mono">{t.minutes}</td>
-                          </tr>
+                          <OpponentRow key={i} t={t} />
                         ))}
                       </tbody>
                     </table>
@@ -112,6 +190,8 @@ export default function Jogos({ data }: { data: DashboardData }) {
                   <p className="foot" style={{ marginTop: 6 }}>
                     Números da temporada atual ({scouting.opponent_threats[0]?.competition}) — não é previsão de
                     escalação, é o elenco disponível.
+                    {scouting.opponent_threats.some((t) => t.extra_stats?.length || t.heatmap?.length) &&
+                      " Nomes sublinhados (▶) abrem mais estatísticas e o heatmap do jogador."}
                   </p>
                 </div>
               )}
@@ -119,6 +199,20 @@ export default function Jogos({ data }: { data: DashboardData }) {
               {scouting.player_watch_points.length > 0 && (
                 <div>
                   <h4 style={subhead}>Pontos de atenção do atleta</h4>
+                  <p className="foot" style={{ marginBottom: 10 }}>
+                    <span className="pill p-alta" style={{ marginRight: 4 }}>
+                      Atenção
+                    </span>
+                    risco real pra esse jogo ·{" "}
+                    <span className="pill p-ok" style={{ marginRight: 4, marginLeft: 4 }}>
+                      Ponto forte
+                    </span>
+                    já está bem, não precisa de ajuste ·{" "}
+                    <span className="pill p-media" style={{ marginRight: 4, marginLeft: 4 }}>
+                      Info
+                    </span>
+                    contexto, sem ação associada
+                  </p>
                   {scouting.player_watch_points.map((w, i) => (
                     <div
                       key={i}
