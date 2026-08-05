@@ -322,14 +322,22 @@ export default function Plano({ data }: { data: DashboardData }) {
               <div className="kpi">
                 <span>{data.positionBenchmark.own_league_name ?? "Sua liga"}</span>
                 <b>
-                  {data.positionBenchmark.own_league_rank ? `#${data.positionBenchmark.own_league_rank}` : "fora do top 100"}
+                  {data.positionBenchmark.own_league_rank
+                    ? `#${data.positionBenchmark.own_league_rank}`
+                    : data.positionBenchmark.own_league_pool_note
+                      ? "ver nota"
+                      : "sem dado"}
                 </b>
                 <em>{data.positionBenchmark.own_league_pool_note ?? ""}</em>
               </div>
               <div className="kpi">
                 <span>5 principais ligas</span>
                 <b>
-                  {data.positionBenchmark.top_leagues_rank ? `#${data.positionBenchmark.top_leagues_rank}` : "fora do top 100"}
+                  {data.positionBenchmark.top_leagues_rank
+                    ? `#${data.positionBenchmark.top_leagues_rank}`
+                    : data.positionBenchmark.top_leagues_pool_note
+                      ? "ver nota"
+                      : "sem dado"}
                 </b>
                 <em>{data.positionBenchmark.top_leagues_pool_note ?? ""}</em>
               </div>
