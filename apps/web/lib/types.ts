@@ -147,6 +147,7 @@ export interface FocusAreaKpi {
   base: string;
   meta: string;
   est?: boolean;
+  peers?: { name: string; value: string }[];
 }
 
 export interface DevelopmentFocusArea {

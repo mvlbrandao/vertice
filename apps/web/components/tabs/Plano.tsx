@@ -1,5 +1,5 @@
 import type { DashboardData } from "@/components/Dashboard";
-import type { PlayerMatchStats } from "@/lib/types";
+import type { PlayerMatchStats, PlayerSeasonStats } from "@/lib/types";
 import { Heatmap } from "@/components/Heatmap";
 
 const CLASS_BY_PRIORITY: Record<string, string> = {
@@ -41,6 +41,23 @@ function computeTotals(stats: PlayerMatchStats[]): Totals {
 
 const per90 = (n: number, minutes: number) => (minutes > 0 ? (n / minutes) * 90 : null);
 
+// Cruzamento não existe em player_match_stats (só jogo-a-jogo do Sofascore não traz esse campo),
+// então usa o agregado de temporada que já coletamos (player_season_stats). Soma todas as
+// competições da temporada mais recente (empréstimo + clube-mãe contam juntos).
+function computeCrossing(seasonStats: PlayerSeasonStats[]): { completed: number; total: number } {
+  if (seasonStats.length === 0) return { completed: 0, total: 0 };
+  const latestSeason = seasonStats.reduce((max, s) => (s.season > max ? s.season : max), seasonStats[0].season);
+  return seasonStats
+    .filter((s) => s.season === latestSeason)
+    .reduce(
+      (acc, s) => ({
+        completed: acc.completed + (s.crosses_completed ?? 0),
+        total: acc.total + (s.crosses_total ?? 0),
+      }),
+      { completed: 0, total: 0 },
+    );
+}
+
 type KpiResult =
   | { kind: "computed"; value: string; coverage: string; benchmark?: string }
   | { kind: "missing"; needs: string }
@@ -66,6 +83,16 @@ function resolveKpi(label: string, t: Totals, data: DashboardData): KpiResult {
         kind: "computed",
         value: `${fmt(v)} finalizações/90min`,
         coverage: `${fmt(t.minutes)} min em ${t.matches} jogos com dados`,
+      };
+    }
+    case "Cruzamentos certos %": {
+      const { completed, total } = computeCrossing(data.seasonStats);
+      if (total === 0) return { kind: "missing", needs: "estatística de cruzamentos por temporada (Sofascore)" };
+      const pct = (completed / total) * 100;
+      return {
+        kind: "computed",
+        value: `${fmt(pct)}% de cruzamentos certos`,
+        coverage: `${completed}/${total} cruzamentos, agregado da temporada mais recente (todas as competições)`,
       };
     }
     case "Duelos defensivos ganhos": {
@@ -191,11 +218,35 @@ export default function Plano({ data }: { data: DashboardData }) {
                         </span>
                       </div>
                       {resolved.kind === "computed" && (
-                        <div style={{ fontSize: 11.5, color: "#12855A" }}>
+                        <div style={{ display: "block", fontSize: 11.5, color: "#12855A" }}>
                           atual: <b>{resolved.value}</b>{" "}
                           <span style={{ color: "var(--mute)" }}>({resolved.coverage})</span>
                           {resolved.benchmark && (
-                            <div style={{ color: "var(--mute)", marginTop: 2 }}>{resolved.benchmark}</div>
+                            <div style={{ display: "block", color: "var(--mute)", marginTop: 2 }}>
+                              {resolved.benchmark}
+                            </div>
+                          )}
+                          {k.peers && k.peers.length > 0 && (
+                            <div style={{ display: "block", marginTop: 4, borderTop: "1px dotted var(--line)", paddingTop: 4 }}>
+                              {k.peers.map((p, pi) => (
+                                <div
+                                  key={pi}
+                                  style={{
+                                    display: "flex",
+                                    justifyContent: "space-between",
+                                    gap: 8,
+                                    padding: "2px 0",
+                                    borderTop: "none",
+                                    color: "var(--mute)",
+                                  }}
+                                >
+                                  <span>{p.name}</span>
+                                  <span className="mono" style={{ whiteSpace: "nowrap" }}>
+                                    {p.value}
+                                  </span>
+                                </div>
+                              ))}
+                            </div>
                           )}
                         </div>
                       )}
