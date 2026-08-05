@@ -2,8 +2,8 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Vertice Scout — Luís Henrique",
-  description: "Plataforma de scouting profissional para acompanhamento de atleta",
+  title: "Vertice Scout",
+  description: "Plataforma de scouting profissional para acompanhamento de atletas",
   manifest: "/manifest.webmanifest",
 };
 

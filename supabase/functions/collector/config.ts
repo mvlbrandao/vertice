@@ -38,16 +38,18 @@ export const TARGETS: PlayerTarget[] = [
     transfermarktId: "1193867",
     fullName: "Pedro Henrique Cardoso de Lima",
     nameKeywords: ["Pedro Lima"],
-    contextKeywords: ["Wolverhampton", "Wolves"],
+    // Contexto amplo de propósito: "Pedro Lima" também é o nome de outro jogador conhecido
+    // (Sporting CP), então o contexto do clube é essencial pra não misturar os dois.
+    contextKeywords: ["Wolverhampton", "Wolves", "FC Porto B", "Porto B"],
     pressFeeds: [
       {
-        name: "Google News - Pedro Lima Wolves (PT)",
-        url: "https://news.google.com/rss/search?q=%22Pedro+Lima%22+Wolverhampton+when:14d&hl=pt-BR&gl=BR&ceid=BR:pt-419",
+        name: "Google News - Pedro Lima Wolves/Porto B (PT)",
+        url: "https://news.google.com/rss/search?q=%22Pedro+Lima%22+(Wolverhampton+OR+%22Porto+B%22)+when:30d&hl=pt-BR&gl=BR&ceid=BR:pt-419",
         lang: "pt",
       },
       {
-        name: "Google News - Pedro Lima Wolves (EN)",
-        url: "https://news.google.com/rss/search?q=%22Pedro+Lima%22+Wolves+when:14d&hl=en-GB&gl=GB&ceid=GB:en",
+        name: "Google News - Pedro Lima Wolves/Porto B (EN)",
+        url: "https://news.google.com/rss/search?q=%22Pedro+Lima%22+(Wolves+OR+%22Porto+B%22)+when:30d&hl=en-GB&gl=GB&ceid=GB:en",
         lang: "en",
       },
     ],
