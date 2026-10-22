@@ -135,7 +135,8 @@ export default function Dashboard({ data, userId, role, players, selectedPlayerI
                 {label}
               </button>
             ))}
-            <button onClick={() => supabase.auth.signOut()} style={{ marginLeft: "auto" }}>
+            {/* sai só deste aparelho: o signOut padrão (global) derruba as outras sessões da conta, inclusive no CTatic, que usa o mesmo login */}
+            <button onClick={() => supabase.auth.signOut({ scope: "local" })} style={{ marginLeft: "auto" }}>
               Sair
             </button>
           </nav>
